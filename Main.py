@@ -78,12 +78,15 @@ X_new = [[]]
 print(model.predict(X_new))
 
 
+# Naiv modell:
+y_mean = np.mean(y)*np.ones(y.shape)#mean = gjennomsnittet
+
 print(model.score(X = X, y = y))
 y_pred = model.predict(X) 
 print(np.sqrt(mean_squared_error(y_pred, y)))
 print(mean_absolute_error(y_pred, y))
 
-y_mean = np.mean(y)*np.ones(y.shape)#mean = gjennomsnittet
+
 print(np.sqrt(mean_squared_error(y_mean, y)))#np.sqrt = kvadratroten
 print(mean_absolute_error(y_mean, y)) 
 
