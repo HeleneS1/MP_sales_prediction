@@ -8,45 +8,77 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from tensorflow.keras.models import Model 
 from tensorflow.keras.layers import Dense, Input, Dropout
+from sklearn.preprocessing import OneHotEncoder
+import datetime as dt
 #%%
 os.chdir('C:/Users/Helene Stabell/Desktop/Academy/Uke 9MP/')
 df_original = pd.read_csv('sales_train.csv')
 
 #Lager kopi av datasettet
 df_draft = df_original.copy()
-df = df_draft[['date', 'date_block_num', 'shop_id', 'item_id', 'item_price', 'item_cnt_day']]
+df_draft = df_draft[['date', 'date_block_num', 'shop_id', 'item_id', 'item_price', 'item_cnt_day']]
 
 # Legger til ny kolonne:
-df['Total_Sales_day'] = df['item_price'] * df['item_cnt_day']
+df_draft['Total_Sales_day'] = df_draft['item_price'] * df_draft['item_cnt_day']
 
 # Sjekker fordelingen:
 # df_draft.hist()
 
+#Sjekker for null-verdier:
+df_draft.isna().sum()
 
 #%%
 # filter data for one shop
-df_one_month = df.loc[df['date_block_num']== 0, :]
+df_one_month = df_draft.loc[df_draft['date_block_num']== 0, :]
 df_grouped_shop = df_one_month[['shop_id', 'date', 'Total_Sales_day']].groupby(by=['shop_id', 'date']).sum().reset_index()
 
 #%%
-# linear_model = LinearRegression()
-# linear_model.fit(X = X_one_month, y = y_one_month)
+# One Hot Encoder av shop-id:
+onehot= OneHotEncoder()
+store_id= df_grouped_shop[['shop_id']]
+onehot.fit(store_id)
+np_onehot=onehot.transform(store_id).todense()
 
-# for row in df_grouped_shop.iterrows():
-#     date = row[1]['date']
-#     string = str(date)
-#     date_clean = ''
-#     for letter in string:
-#         if letter.isnumeric():
-#             letter.join(date_clean)
-#     print(date_clean)
+# Antar at kategoriene er "shopnr"
+print(onehot.categories_)
 
+#OHE som eget dataframe
+ohe_shop= pd.DataFrame(np_onehot,columns=onehot.categories_)
+
+# Legger sammen med OG-dataframe
+df_concat= pd.concat([df_draft, ohe_shop],axis=1)
+
+
+#%%
+# Fikser dato
+# Gjør om date til datetime-format:
+df_concat['date']= pd.to_datetime(df_concat['date'],format= '%d.%m.%Y')
+
+
+# Legger til dag, måned, år, kvartal:
+df_concat['month'] = df_concat['date'].dt.month
+df_concat['year'] = df_concat['date'].dt.year
+df_concat['day'] = df_concat['date'].dt.day
+df_concat['quarter'] = df_concat['date'].dt.quarter
+
+
+# Legger til day of week(numerisk) og tekst. 
+#NB! Mandag=0, søndag=6
+df_concat['dayofweek'] = df_concat['date'].dt.dayofweek # Numerisk
+df_concat['dayofweek_text'] = df_concat['date'].dt.day_name() #Gir i tekst
+
+
+# Sjekker om det er helg eller ikke:
+# np.where()= hvis sant, gjør x, ellers y
+df_concat['is_weekend']= np.where(df_concat['dayofweek_text'].isin(['Sunday','Saturday']),1,0)
 
 
 #%%
 
-X_one_month = np.c_[df_grouped_shop[['shop_id', 'date']]]
-y_one_month = np.c_[df_grouped_shop['Total_Sales_day']]
+
+
+X_one_month = np.c_[df_concat[['shop_id', 'year','month', 'day','quarter','dayofweek', 'is_weekend' ]]]
+y_one_month = np.c_[df_concat['Total_Sales_day']]
 
 input_layer = Input(shape=(2,))
 first_hidden_layer = Dense(3, activation = "relu")(input_layer)
