@@ -80,6 +80,15 @@ df_concat['is_weekend']= np.where(df_concat['dayofweek_text'].isin(['Sunday','Sa
 X_one_month = np.c_[df_concat[['shop_id', 'year','month', 'day','quarter','dayofweek', 'is_weekend' ]]]
 y_one_month = np.c_[df_concat['Total_Sales_day']]
 
+
+# Train, test, split:
+X_train, X_test, y_train, y_test = train_test_split(
+    X_one_month, y_one_month, test_size=0.3, random_state=420)
+
+X_test, X_val, y_test, y_val = train_test_split(
+    X_test, y_test, test_size=0.333, random_state=420)
+
+
 input_layer = Input(shape=(2,))
 first_hidden_layer = Dense(3, activation = "relu")(input_layer)
 second_hidden_layer = Dense(3, activation = "relu")(first_hidden_layer)
