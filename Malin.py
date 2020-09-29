@@ -72,6 +72,8 @@ df_concat['dayofweek_text'] = df_concat['date'].dt.day_name() #Gir i tekst
 df_concat['is_weekend']= np.where(df_concat['dayofweek_text'].isin(['Sunday','Saturday']),1,0)
 
 
+
+
 # Train, test, split:
 
 # filter data for one shop
@@ -84,8 +86,6 @@ X_one_month = np.c_[df_grouped_shop[['shop_id', 'date']]]
 y_one_month = np.c_[df_grouped_shop['Total_Sales_day']]
 
 
-
-# Train, test, split:
 
 X_train, X_test, y_train, y_test = train_test_split(
     X_one_month, y_one_month, test_size=0.3, random_state=420)
