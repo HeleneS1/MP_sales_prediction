@@ -10,6 +10,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Dense, Input, Dropout
 from sklearn.preprocessing import OneHotEncoder
 import datetime as dt
+from sklearn.model_selection import train_test_split
 #%%
 os.chdir('C:/Users/Helene Stabell/Desktop/Academy/Uke 9MP/')
 df_original = pd.read_csv('sales_train.csv')
@@ -46,7 +47,7 @@ print(onehot.categories_)
 ohe_shop= pd.DataFrame(np_onehot,columns=onehot.categories_)
 
 # Legger sammen med OG-dataframe
-df_concat= pd.concat([df_draft, ohe_shop],axis=1)
+df_concat= pd.concat([df_grouped_shop, ohe_shop],axis=1)
 
 
 #%%
@@ -76,7 +77,6 @@ df_concat['is_weekend']= np.where(df_concat['dayofweek_text'].isin(['Sunday','Sa
 #%%
 
 
-
 X_one_month = np.c_[df_concat[['shop_id', 'year','month', 'day','quarter','dayofweek', 'is_weekend' ]]]
 y_one_month = np.c_[df_concat['Total_Sales_day']]
 
@@ -88,8 +88,14 @@ X_train, X_test, y_train, y_test = train_test_split(
 X_test, X_val, y_test, y_val = train_test_split(
     X_test, y_test, test_size=0.333, random_state=420)
 
+X_train.reshape(-1,7)
+X_test.reshape(-1,7)
+X_val.reshape(-1,7)
+y_train.reshape(-1,1)
+y_test.reshape(-1,1)
+y_val.reshape(-1,1)
 
-input_layer = Input(shape=(2,))
+input_layer = Input(shape=(7,))
 first_hidden_layer = Dense(3, activation = "relu")(input_layer)
 second_hidden_layer = Dense(3, activation = "relu")(first_hidden_layer)
 third_hidden_layer = Dense(2, activation = "relu")(second_hidden_layer)
@@ -98,13 +104,12 @@ output_layer = Dense(1, activation = "linear")(third_hidden_layer)
 linear_model1 = Model(inputs = input_layer, outputs = output_layer)
 linear_model1.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
-linear_model1.fit(X_one_month,y_one_month, batch_size=32, epochs=10)
+linear_model1.fit(X_train, y_train, batch_size=32, epochs=100)
 
 # prediction = linear_model1.predict(X_one_month)
 
 
 print(prediction)
-
 #Om vi ønsker å sette inn prediction:
 X_new = [[]] 
 print(model.predict(X_new))
