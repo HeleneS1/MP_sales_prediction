@@ -71,3 +71,24 @@ df_concat['dayofweek_text'] = df_concat['date'].dt.day_name() #Gir i tekst
 # np.where()= hvis sant, gjør x, ellers y
 df_concat['is_weekend']= np.where(df_concat['dayofweek_text'].isin(['Sunday','Saturday']),1,0)
 
+
+# Train, test, split:
+
+# filter data for one shop
+df_one_month = df.loc[df['date_block_num']== 0, :]
+df_grouped_shop = df_one_month[['shop_id', 'date', 'Total_Sales_day']].groupby(by=['shop_id', 'date']).sum().reset_index()
+
+
+
+X_one_month = np.c_[df_grouped_shop[['shop_id', 'date']]]
+y_one_month = np.c_[df_grouped_shop['Total_Sales_day']]
+
+
+
+# Train, test, split:
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_one_month, y_one_month, test_size=0.3, random_state=420)
+
+X_test, X_val, y_test, y_val = train_test_split(
+    X_test, y_test, test_size=0.333, random_state=420)
