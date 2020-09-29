@@ -31,6 +31,18 @@ df_grouped_shop = df_one_month[['shop_id', 'date', 'Total_Sales_day']].groupby(b
 #%%
 # linear_model = LinearRegression()
 # linear_model.fit(X = X_one_month, y = y_one_month)
+
+# for row in df_grouped_shop.iterrows():
+#     date = row[1]['date']
+#     string = str(date)
+#     date_clean = ''
+#     for letter in string:
+#         if letter.isnumeric():
+#             letter.join(date_clean)
+#     print(date_clean)
+
+
+
 #%%
 
 X_one_month = np.c_[df_grouped_shop[['shop_id', 'date']]]
@@ -50,17 +62,7 @@ linear_model1.fit(X_one_month,y_one_month, batch_size=32, epochs=10)
 # prediction = linear_model1.predict(X_one_month)
 
 
-
-
-
-
-
-
 print(prediction)
-
-
-
-
 
 #Om vi ønsker å sette inn prediction:
 X_new = [[]] 
