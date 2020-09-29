@@ -8,25 +8,24 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from tensorflow.keras.models import Model 
 from tensorflow.keras.layers import Dense, Input, Dropout
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 import datetime as dt
 from sklearn.model_selection import train_test_split
 #%%
 os.chdir('C:/Users/Helene Stabell/Desktop/Academy/Uke 9MP/')
 df_original = pd.read_csv('sales_train.csv')
 
-#Lager kopi av datasettet
+#lag kopi av orginal dataframe
 df_draft = df_original.copy()
-df_draft = df_draft[['date', 'date_block_num', 'shop_id', 'item_id', 'item_price', 'item_cnt_day']]
 
-# Legger til ny kolonne:
+# Fjerner nullverdier fra df_concat ved å filtrere dem vekk:
+df_draft = df_draft.loc[df_draft['item_cnt_day']>=0]
+
+#sjekk at ingen retur-salg har kommet med
+(df_draft['item_cnt_day'] == -1).sum()
+
+# Legger til 'total sales kolonne' 
 df_draft['Total_Sales_day'] = df_draft['item_price'] * df_draft['item_cnt_day']
-
-# Sjekker fordelingen:
-# df_draft.hist()
-
-#Sjekker for null-verdier:
-df_draft.isna().sum()
 
 #%%
 # filter data for one shop
@@ -35,44 +34,79 @@ df_grouped_shop = df_one_month[['shop_id', 'date', 'Total_Sales_day']].groupby(b
 
 #%%
 # One Hot Encoder av shop-id:
-onehot= OneHotEncoder()
-store_id= df_grouped_shop[['shop_id']]
-onehot.fit(store_id)
-np_onehot=onehot.transform(store_id).todense()
-
-# Antar at kategoriene er "shopnr"
-print(onehot.categories_)
-
-#OHE som eget dataframe
-ohe_shop= pd.DataFrame(np_onehot,columns=onehot.categories_)
-
-# Legger sammen med OG-dataframe
-df_concat= pd.concat([df_grouped_shop, ohe_shop],axis=1)
-
+shop_encoder = OneHotEncoder(sparse=False)
+df_ohe_shops = pd.DataFrame (shop_encoder.fit_transform(df_grouped_shop[['shop_id']]))
+df_ohe_shops.columns = shop_encoder.get_feature_names(['shop_id'])
 
 #%%
 # Fikser dato
 # Gjør om date til datetime-format:
-df_concat['date']= pd.to_datetime(df_concat['date'],format= '%d.%m.%Y')
+df_grouped_shop['date']= pd.to_datetime(df_grouped_shop['date'],format= '%d.%m.%Y')
 
 
-# Legger til dag, måned, år, kvartal:
-df_concat['month'] = df_concat['date'].dt.month
-df_concat['year'] = df_concat['date'].dt.year
-df_concat['day'] = df_concat['date'].dt.day
-df_concat['quarter'] = df_concat['date'].dt.quarter
+# One Hot Encoder av måned:
+df_grouped_shop['month'] = df_grouped_shop['date'].dt.month
+month_encoder = OneHotEncoder(sparse=False)
+df_ohe_months = pd.DataFrame (month_encoder.fit_transform(df_grouped_shop[['month']]))
+df_ohe_months.columns = month_encoder.get_feature_names(['month'])
 
+# One Hot Encoder av år:
+df_grouped_shop['year'] = df_grouped_shop['date'].dt.year
+year_encoder = OneHotEncoder(sparse=False)
+df_ohe_years = pd.DataFrame (year_encoder.fit_transform(df_grouped_shop[['year']]))
+df_ohe_years.columns = year_encoder.get_feature_names(['year'])
+
+# One Hot Encoder av dag:
+df_grouped_shop['day'] = df_grouped_shop['date'].dt.day
+day_encoder = OneHotEncoder(sparse=False)
+df_ohe_days = pd.DataFrame(day_encoder.fit_transform(df_grouped_shop[['day']]))
+df_ohe_days.columns = day_encoder.get_feature_names(['day'])
+
+# One Hot Encoder av kvartal:
+df_grouped_shop['quarter'] = df_grouped_shop['date'].dt.quarter
+quarter_encoder = OneHotEncoder(sparse=False)
+df_ohe_quarter = pd.DataFrame (quarter_encoder.fit_transform(df_grouped_shop[['quarter']]))
+df_ohe_quarter.columns = quarter_encoder.get_feature_names(['quarter'])
+
+# One Hot Encoder av ukedag:
+df_grouped_shop['dayofweek_text'] = df_grouped_shop['date'].dt.day_name() #Gir i tekst
+dayofweek_encoder = OneHotEncoder(sparse=False)
+df_ohe_dayofweek = pd.DataFrame (dayofweek_encoder.fit_transform(df_grouped_shop[['dayofweek_text']]))
+df_ohe_dayofweek.columns = dayofweek_encoder.get_feature_names(['Day:'])
 
 # Legger til day of week(numerisk) og tekst. 
 #NB! Mandag=0, søndag=6
-df_concat['dayofweek'] = df_concat['date'].dt.dayofweek # Numerisk
-df_concat['dayofweek_text'] = df_concat['date'].dt.day_name() #Gir i tekst
-
+df_grouped_shop['dayofweek'] = df_grouped_shop['date'].dt.dayofweek # Numerisk
 
 # Sjekker om det er helg eller ikke:
 # np.where()= hvis sant, gjør x, ellers y
-df_concat['is_weekend']= np.where(df_concat['dayofweek_text'].isin(['Sunday','Saturday']),1,0)
+df_grouped_shop['is_weekend']= np.where(df_grouped_shop['dayofweek_text'].isin(['Sunday','Saturday']),1,0)
+df_weekend = df_grouped_shop['is_weekend']
 
+#%%
+# Skalerer ved log:
+np_log_sales = np.log( np.c_[df_grouped_shop['Total_Sales_day']])
+
+df_log_sales=pd.DataFrame(np_log_sales)
+
+# Standardisering:   
+sales_standardiser=StandardScaler()   
+df_std_log_sales = pd.DataFrame(sales_standardiser.fit_transform(df_log_sales))
+
+#%%
+""" Her er preprocesseringen ferdig """
+#%%
+
+df_analysis = pd.concat([
+    df_ohe_days, 
+    df_ohe_dayofweek, 
+    df_ohe_months,
+    df_ohe_years, 
+    df_ohe_quarter, 
+    df_weekend, 
+    df_ohe_shops,
+    df_std_log_sales], 
+    axis=1)
 
 #%%
 
@@ -105,6 +139,24 @@ linear_model1 = Model(inputs = input_layer, outputs = output_layer)
 linear_model1.compile(optimizer='adam', loss='mse', metrics=['mae'])
 
 linear_model1.fit(X_train, y_train, batch_size=32, epochs=100)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # prediction = linear_model1.predict(X_one_month)
 
