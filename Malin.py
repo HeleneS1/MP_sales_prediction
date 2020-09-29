@@ -71,6 +71,51 @@ df_concat['dayofweek_text'] = df_concat['date'].dt.day_name() #Gir i tekst
 # np.where()= hvis sant, gjør x, ellers y
 df_concat['is_weekend']= np.where(df_concat['dayofweek_text'].isin(['Sunday','Saturday']),1,0)
 
+#%% Skalerer data:
+    
+# Henter ut nullverdier i eget df og lagrer som csv
+NaN_draft=df_draft.copy()
+
+NaN_draft= NaN_draft.loc[NaN_draft['Total_Sales_day']<0]
+
+NaN_draft.to_csv('Nullvalues_totalsales.csv')
+
+
+
+# Fjerner nullverdier fra df_concat ved å filtrere dem vekk:
+df_concat= df_concat.loc[df_concat['Total_Sales_day']>=0]
+
+# Dobbeltsjekker at det ikke er nullverdier:
+df_concat['Total_Sales_day'].isna().sum()
+
+
+
+# Skalerer ved log:
+
+log=np.log(np.c_[df_concat['Total_Sales_day']])
+log=pd.DataFrame(log)
+
+#Sjekker nullverdier:
+log.isna().sum()
+
+# Sjekker distribusjonen etter logtransformasjon:
+log.hist()
+
+
+# Standardisering:   
+StdScale=StandardScaler()   
+
+StdScale.fit(log)
+
+std_total= StdScale.transform(log)
+
+#Sjekker fordelingen:
+plt.hist(std_total)
+
+# Setter kolonnenne tilbake i df:
+df_concat['Total_Sales_day_std'] =std_total[:,0]
+del df_concat['Total_Sales_day']
+
 
 
 
