@@ -13,7 +13,9 @@ import datetime as dt
 from sklearn.model_selection import train_test_split
 #%%
 os.chdir('C:/Users/Helene Stabell/Desktop/Academy/Uke 9MP/')
-df_original = pd.read_csv('sales_train.csv')
+df_original = pd.read_csv('sales_training_w_categories.csv')
+#
+#
 
 #lag kopi av orginal dataframe
 df_draft = df_original.copy()
@@ -82,6 +84,13 @@ df_grouped_shop['dayofweek'] = df_grouped_shop['date'].dt.dayofweek # Numerisk
 # np.where()= hvis sant, gjør x, ellers y
 df_grouped_shop['is_weekend']= np.where(df_grouped_shop['dayofweek_text'].isin(['Sunday','Saturday']),1,0)
 df_weekend = df_grouped_shop['is_weekend']
+
+
+# One Hot Encoder av categorier: 
+category_encoder = OneHotEncoder(sparse=False)
+df_ohe_category = pd.DataFrame (category_encoder.fit_transform(df_grouped_shop[['category_id']]))
+df_ohe_category.columns = category_encoder.get_feature_names(['category_id:'])
+
 
 #%%
 # Skalerer ved log:
