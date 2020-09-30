@@ -14,8 +14,6 @@ from sklearn.model_selection import train_test_split
 #%%
 os.chdir('C:/Users/Helene Stabell/Desktop/Academy/Uke 9MP/')
 df_original = pd.read_csv('sales_training_w_categories.csv')
-#
-#
 
 #lag kopi av orginal dataframe
 df_draft = df_original.copy()
