@@ -97,22 +97,23 @@ df_std_log_sales = pd.DataFrame(sales_standardiser.fit_transform(df_log_sales))
 """ Her er preprocesseringen ferdig """
 #%%
 
-df_analysis = pd.concat([
+df_analysis_x = pd.concat([
     df_ohe_days, 
     df_ohe_dayofweek, 
     df_ohe_months,
     df_ohe_years, 
     df_ohe_quarter, 
     df_weekend, 
-    df_ohe_shops,
-    df_std_log_sales], 
+    df_ohe_shops], 
     axis=1)
+
+df_analysis_y = pd.DataFrame(sales_standardiser.fit_transform(df_log_sales))
 
 #%%
 
 
-X_one_month = np.c_[df_concat[['shop_id', 'year','month', 'day','quarter','dayofweek', 'is_weekend' ]]]
-y_one_month = np.c_[df_concat['Total_Sales_day']]
+X_one_month = np.c_[df_analysis_x[['shop_id', 'year','month', 'day','quarter','dayofweek', 'is_weekend' ]]]
+y_one_month = np.c_[df_analysis_y['Total_Sales_day']]
 
 
 # Train, test, split:
